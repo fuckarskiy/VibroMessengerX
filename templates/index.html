@@ -1,1 +1,76 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ARSKIY WEBCHAT</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>ARSKIY WEBCHAT</h1>
+
+<div id="login-register">
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+</div>
+
+<div id="search-area" style="display:none;">
+<input type="text" id="search" placeholder="Search user..." oninput="searchUser()">
+<div id="search-results"></div>
+</div>
+
+<div class="chat-box" id="chat"></div>
+<input type="text" id="msg" placeholder="Напиши сообщение...">
+<button onclick="sendMsg()">Отправить</button>
+
+<script>
+let currentUser = null;
+function register(){
+    fetch("/register", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        })
+    }).then(r=>r.json()).then(console.log)
+}
+function login(){
+    fetch("/login", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        })
+    }).then(r=>r.json()).then(d=>{
+        if(d.user_id){
+            currentUser=d.user_id;
+            document.getElementById("login-register").style.display="none";
+            document.getElementById("search-area").style.display="block";
+        }
+    })
+}
+function searchUser(){
+    fetch("/search?q="+document.getElementById("search").value)
+    .then(r=>r.json())
+    .then(d=>{
+        const div=document.getElementById("search-results");
+        div.innerHTML="";
+        d.forEach(u=>{ div.innerHTML+=`<p>${u.username} (${u.id})</p>` })
+    })
+}
+function sendMsg(){
+    const m=document.getElementById("msg").value;
+    if(m && currentUser){
+        fetch("/dm/send", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({from:currentUser,to:currentUser,msg:m})
+        })
+        document.getElementById("chat").innerHTML+=`<p>${m}</p>`;
+        document.getElementById("msg").value="";
+    }
+}
+</script>
+</body>
+</html>
